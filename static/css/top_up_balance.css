@@ -1,0 +1,103 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+body {
+    background: linear-gradient(135deg, #ff7300, #ffaf40);
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 15px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+   
+}
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #f18c1c; /* Turuncu renk */
+}
+.balance {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+.form-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    margin-top: 20px;
+}
+.form-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #f18c1c; /* Turuncu renk */
+    margin-bottom: 20px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #333;
+}
+.form-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+.form-input:focus {
+    border-color: #f18c1c;
+    outline: none;
+}
+.form-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #f18c1c; /* Turuncu arka plan */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+.form-button:hover {
+    background-color: #d47a0f; /* Daha koyu turuncu */
+}
+select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+select:focus {
+    border-color: #f18c1c;
+    outline: none;
+}
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketApp - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #ff7300, #ffaf40);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            padding-top: 200px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+        .user-info {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .balance {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 15px;
+            background: #ff7300;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-bottom: 15px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            background: #e66400;
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .btn span {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="user-info" id="adminInfo">Yükleniyor...</div>
+        <div class="balance" id="balance">Bakiye: Yükleniyor...</div>
+    </div>
+
+    <div class="container">
+        <button class="btn" id="salesBtn">Satışlar<span>Toplam satışları ve raporları görüntüleyin.</span></button>
+        <button class="btn" id="adminInfoBtn">Admin Bilgileri<span>Admin bilgilerinizi yönetin.</span></button>
+        <button class="btn" id="addProductBtn">Ürün Ekle<span>Yeni ürün ekleyin.</span></button>
+        <button class="btn" id="productListBtn">Ürün Listesi<span>Ürünlerinizi listeleyin.</span></button>
+        <button class="btn" id="customerListBtn">Müşteri Listesi<span>Tüm müşteri bilgilerini görüntüleyin.</span></button>
+        <button class="btn" id="withdrawBtn">Para Çekme İşlemleri<span>Para çekme işlemlerini yönetin.</span></button>
+
+        <button class="btn" id="productOperationBtn">Ürün İşlemleri<span>Ürün bilgilerini buradan güncelleyebilirsiniz.</span></button>
+
+        <button id="logoutBtn" class="btn">Çıkış Yap</button>
+    </div>
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+
+    <script>
+        // const new_access_token = "{{ new_access_token }}";
+        //if (new_access_token) { localStorage.setItem("token", new_access_token); }
+        // API'den admin bilgilerini almak
+        const accessToken = localStorage.getItem('token'); // Token'ı localStorage veya uygun bir yerden al
+
+        fetch('/admin_info', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,  // Token'ı ekle
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP hata! Durum: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('adminInfo').textContent = `Admin: ${data.username}`;
+            document.getElementById('balance').textContent = `Bakiye: ${data.balance}₺`;
+        })
+        .catch(error => {
+            console.error('API verisi alınırken bir hata oluştu:', error);
+            document.getElementById('adminInfo').textContent = 'Admin bilgileri yüklenemedi';
+            document.getElementById('balance').textContent = 'Bakiye: Hata';
+        });
+
+        // Butonları işleme
+        document.getElementById('salesBtn').addEventListener('click', function() {
+            window.location.href = '/admin/sales?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('adminInfoBtn').addEventListener('click', function() {
+            window.location.href = '/profile?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('addProductBtn').addEventListener('click', function() {
+            window.location.href = '/admin/add_products?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('productListBtn').addEventListener('click', function() {
+            window.location.href = '/admin/product_list?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('customerListBtn').addEventListener('click', function() {
+            window.location.href = '/admin/customer?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('withdrawBtn').addEventListener('click', function() {
+            window.location.href = '/admin/withdraw_money?token='+  localStorage.getItem('token');
+        });
+
+        document.getElementById('productOperationBtn').addEventListener('click', function() {
+            window.location.href = '/admin/product_operation?token='+  localStorage.getItem('token');
+        });
+
+       /* document.getElementById('logoutBtn').addEventListener('click', function() {
+            // Logout işlemi için API çağrısı veya yerel çıkış işlemi yapılabilir
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        });*/
+    </script>
+     <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</body>
+</html>

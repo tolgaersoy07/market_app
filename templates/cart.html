@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarketApp - Sepet</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/cart.css') }}"
+    />
+    <style>
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #f18c1c;
+      }
+
+      .cart-total {
+        background: #fff; /* Beyaz arka plan */
+        color: #333; /* Koyu gri yazı */
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        padding: 15px;
+        border-radius: 8px;
+
+        margin-top: 15px;
+        width: 100%;
+        max-width: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">Sepet</div>
+      <div class="balance" id="balance">Bakiye: Yükleniyor...</div>
+    </div>
+
+    <div class="container">
+      <div id="error-message" class="error-message" style="display: none"></div>
+      <div id="cartItems">
+        <!-- Sepet ürünleri buraya yüklenecek -->
+      </div>
+
+      <button class="btn" id="paymentBtn">Ödeme Yap</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+    <script>
+      document.getElementById("paymentBtn").style.display = "none";
+      const accessToken = localStorage.getItem("token");
+
+      // **Kullanıcı bilgilerini al**
+      fetch("/simple_user_info", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById(
+            "balance"
+          ).textContent = `Bakiye: ${data.balance}₺`;
+        })
+        .catch((error) => {
+          console.error("Kullanıcı bilgileri alınırken hata oluştu:", error);
+        });
+
+      // **Sepet verilerini al ve listele**
+      fetch("/cart/view", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          const cartItemsContainer = document.getElementById("cartItems");
+          const errorMessage = document.getElementById("errorMessage");
+
+          cartItemsContainer.innerHTML = "";
+          console.log(data.message);
+          if (data.message == "Sepetiniz boş") {
+            cartItemsContainer.innerHTML = "<h4>Sepetiniz boş.</h4>";
+            return;
+          }
+          document.getElementById("paymentBtn").style.display = "block";
+
+          let totalCartPrice = 0;
+
+          // **Sepet ürünlerini listele**
+          data.forEach((item, index) => {
+            if (item.product_id) {
+              // **Toplam fiyat objesini atlamak için**
+              const cartItem = document.createElement("div");
+              cartItem.classList.add("cart-item");
+
+              if (index % 2 === 0) {
+                cartItem.style.backgroundColor = "#c4f5ff";
+              } else {
+                cartItem.style.backgroundColor = "#fbc5ef";
+              }
+
+              cartItem.innerHTML = `
+                <div class="cart-item-name">${item.name}</div>
+
+                <p id="stock-warning" style="display: block; color: red; font-weight: bold;">
+                    Bu üründen stokta ${item.max_available_quantity} adet vardır!
+                </p>
+
+                
+                <div class="cart-item-price">Toplam Adet: ${item.quantity}</div>
+                <div class="cart-item-price">Birim Fiyat: ${item.unit_price}₺</div>
+                <div class="cart-item-price">Toplam Fiyat: ${item.total_price}₺</div>
+                <div class="cart-item-price">Ürün Barkodu: ${item.barcode}</div>
+                <div class="cart-item-price">Ürün Bilgisi: ${item.info}</div>
+                <div class="cart-item-quantity">
+                    <button class="quantity-btn minus" data-barcode="${item.barcode}" data-action="minus">-</button>
+                    <span>${item.quantity}</span>
+                    <button class="quantity-btn plus" data-barcode="${item.barcode}" data-action="plus">+</button>
+                    <button class="quantity-btn" data-barcode="${item.barcode}" data-action="delete">X</button>
+                </div>`;
+              const stockWarning = cartItem.querySelector("#stock-warning");
+
+              if (item.stock_status === "STOK YOK") {
+                stockWarning.innerHTML = `Bu ürün stokta kalmamıştır!`;
+                stockWarning.style.display = "block";
+                cartItem.style.backgroundColor = "#3333";
+                cartItem.style.pointerEvents = "none";
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='delete']"
+                ).style.pointerEvents = "auto";
+
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='minus']"
+                ).style.backgroundColor = "#3333";
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='plus']"
+                ).style.backgroundColor = "#3333";
+              } else if (item.stock_status === "YETERSİZ STOK") {
+                cartItem.style.pointerEvents = "none";
+                cartItem.style.backgroundColor = "#f5deb3";
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='minus']"
+                ).style.pointerEvents = "auto";
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='delete']"
+                ).style.pointerEvents = "auto";
+                cartItem.querySelector(
+                  ".quantity-btn[data-action='plus']"
+                ).style.backgroundColor = "#3333";
+              } else {
+                stockWarning.style.display = "none"; // 5 veya daha azsa göster
+              }
+
+              cartItemsContainer.appendChild(cartItem);
+            } else {
+              // **Toplam sepet fiyatını al**
+              totalCartPrice = item.total_price;
+            }
+          });
+
+          // **Toplam fiyatı göster**
+          const totalPriceDiv = document.createElement("div");
+          totalPriceDiv.classList.add("cart-total");
+          totalPriceDiv.innerHTML = `
+   
+        <span>Toplam Tutar: </span><strong>${totalCartPrice}₺</strong>`;
+
+          totalPriceDiv.style.backgroundColor = "orange";
+          cartItemsContainer.appendChild(totalPriceDiv);
+
+          document.querySelectorAll(".quantity-btn").forEach((button) => {
+            button.addEventListener("click", function () {
+              const barcode = this.getAttribute("data-barcode");
+              const action = this.getAttribute("data-action");
+
+              fetch(`/cart/update/${barcode}/${action}`, {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.code == 200) {
+                    location.reload();
+                  } else {
+                    showErrorMessage(data.message + ".Barkod: " + data.barcode);
+                  }
+                })
+                .catch((error) =>
+                  showErrorMessage(
+                    "Sepet bilgileri güncellenirken hata oluştu." + error
+                  )
+                );
+            });
+          });
+        })
+        .catch((error) => {
+          showErrorMessage("Sepet bilgileri alınırken hata oluştu." + error);
+        });
+
+      function showErrorMessage(message) {
+        const errorMessage = document.getElementById("error-message");
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+      }
+
+      // **Ödeme yap butonuna tıklama işlevi**
+      document
+        .getElementById("paymentBtn")
+        .addEventListener("click", function () {
+          const accessToken = localStorage.getItem("token");
+
+          fetch("/cart/payment", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.code == 200) {
+                // ✅ Ödeme başarılıysa mesaj göster ve yönlendir
+                //showErrorMessage(`Ödeme başarılı! Siparişiniz alındı. Sipariş No: ${data.order_id}`);
+                showNotification(data.message, "success");
+
+              } else {
+                // ❌ Ödeme başarısızsa hata mesajını göster
+                showNotification(data.message, "error");
+              }
+            })
+            .catch((error) => {
+              showNotification(`Ödeme işlemi sırasında hata oluştu: ${error}`, "error");
+            });
+        });
+
+      function showNotification(message, type) {
+        let msgBox = document.getElementById("error-message");
+
+        msgBox.textContent = message;
+        msgBox.style.display = "block"; // Mesajı göster
+
+        if (type === "success") {
+          msgBox.style.backgroundColor = "#d4edda"; // Yeşil arka plan
+          msgBox.style.color = "#155724"; // Yeşil metin rengi
+          msgBox.style.border = "1px solid #c3e6cb"; // Hafif yeşil kenarlık
+        } else if (type === "error") {
+          msgBox.style.backgroundColor = "#f8d7da"; // Kırmızı arka plan
+          msgBox.style.color = "#721c24"; // Kırmızı metin rengi
+          msgBox.style.border = "1px solid #f5c6cb"; // Hafif kırmızı kenarlık
+        }
+      }
+    </script>
+  </body>
+</html>

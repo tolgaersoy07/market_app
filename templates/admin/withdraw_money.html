@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Çek - MarketApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #ff7300, #ffaf40);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f18c1c; /* Turuncu renk */
+        }
+        .balance {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+        .form-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #f18c1c; /* Turuncu renk */
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        .form-input:focus {
+            border-color: #f18c1c;
+            outline: none;
+        }
+        .form-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #f18c1c; /* Turuncu arka plan */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .form-button:hover {
+            background-color: #d47a0f; /* Daha koyu turuncu */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">MarketApp</div>
+        <div class="balance">Bakiye: 250₺</div>
+    </div>
+
+    <div class="form-container">
+        <div class="form-title">Para Çek</div>
+        <form id="withdrawal-form">
+            <div class="form-group">
+                <label for="iban" class="form-label">IBAN Numarası</label>
+                <input type="text" id="iban" class="form-input" required placeholder="IBAN numaranızı girin" />
+            </div>
+
+            <div class="form-group">
+                <label for="account-name" class="form-label">Hesap Sahibinin Adı</label>
+                <input type="text" id="account-name" class="form-input" required placeholder="Hesap sahibinin adı" />
+            </div>
+
+            <div class="form-group">
+                <label for="amount" class="form-label">Çekilecek Miktar (₺)</label>
+                <input type="number" id="amount" class="form-input" required placeholder="Çekmek istediğiniz miktar" />
+            </div>
+
+            <button type="submit" class="form-button">Para Çek</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("withdrawal-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // Formdan değerleri al
+            const iban = document.getElementById("iban").value;
+            const accountName = document.getElementById("account-name").value;
+            const amount = document.getElementById("amount").value;
+
+            // Girdi doğrulaması
+            if (!iban || !accountName || !amount) {
+                alert("Lütfen tüm alanları doldurun!");
+                return;
+            }
+
+            // Kullanıcıya ait tokeni almak (örneğin, localStorage'dan)
+            const token = localStorage.getItem('token'); // 'user_token' kullanıcı token'ı olsun
+
+            // API isteği gönderme
+            fetch('/withdrawal_process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token // Backend API token doğrulaması için header'a eklenir
+                },
+                body: JSON.stringify({
+                    iban: iban,
+                    accountName: accountName,
+                    amount: parseFloat(amount)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Withdrawal successful') {
+                    alert("Para çekme işlemi başarıyla tamamlandı!");
+                    location.reload(); // Sayfayı yenileyerek yeni bakiyeyi göster
+                } else {
+                    alert("Bir hata oluştu. Lütfen tekrar deneyin.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Bir hata oluştu. Lütfen tekrar deneyin.");
+            });
+
+            console.log(`Para Çekme Başlatıldı:
+                IBAN: ${iban},
+                Hesap Sahibi: ${accountName},
+                Çekilecek Miktar: ${amount}₺`);
+        });
+    </script>
+</body>
+</html>

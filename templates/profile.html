@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profil - MarketApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+  </head>
+  <body>
+    <div class="profile-container">
+      <div class="profile-title">Profilim</div>
+      <div
+        id="success-message"
+        style="display: none; color: green; font-weight: bold"
+      ></div>
+      <div
+        id="error-message"
+        style="display: none; color: red; font-weight: bold"
+      ></div>
+
+      <div class="profile-info">
+        <div class="profile-label">Ad Soyad</div>
+        <div class="profile-value" id="name">Yükleniyor...</div>
+      </div>
+
+      <div class="profile-info">
+        <div class="profile-label">Bakiye:</div>
+        <div class="profile-value" id="balance">Yükleniyor...</div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-label">Telefon</div>
+        <div class="profile-value" id="phone">Yükleniyor...</div>
+      </div>
+
+      <div class="profile-info">
+        <div class="profile-label">E-posta</div>
+        <div class="profile-value" id="email-display">Yükleniyor...</div>
+        <input
+          type="email"
+          id="email-input"
+          class="form-input"
+          placeholder="Yeni E-posta"
+          style="display: none"
+        />
+        <button
+          id="edit-email-btn"
+          class="form-button"
+          onclick="toggleEmailEdit()"
+        >
+          E-posta Değiştir
+        </button>
+      </div>
+
+      <input
+        type="password"
+        id="password-input"
+        class="form-input"
+        placeholder="Yeni Şifre"
+        style="display: none"
+      />
+      <input
+        type="password"
+        id="confirm-password-input"
+        class="form-input"
+        placeholder="Yeni Şifre Tekrar"
+        style="display: none"
+      />
+      <button
+        id="edit-password-btn"
+        class="form-button"
+        onclick="togglePasswordEdit()"
+      >
+        Şifre değiştir
+      </button>
+    </div>
+
+    <script>
+      async function fetchUserProfile() {
+        const response = await fetch("/user_profile", {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        document.getElementById("name").innerText = data.name;
+        document.getElementById("phone").innerText = data.phone;
+        document.getElementById("email-display").innerText = data.email;
+        document.getElementById("balance").innerText = `${data.balance}₺`;
+      }
+
+      function toggleEmailEdit() {
+        let passwordInput = document.getElementById("password-input");
+        let confirmPasswordInput = document.getElementById(
+          "confirm-password-input"
+        );
+        passwordInput.style.display = "none";
+        confirmPasswordInput.style.display = "none";
+        const emailDisplay = document.getElementById("email-display");
+        const emailInput = document.getElementById("email-input");
+        const editEmailBtn = document.getElementById("edit-email-btn");
+
+        if (emailInput.style.display === "none") {
+          emailInput.style.display = "block";
+          editEmailBtn.innerText = "E-posta Kaydet";
+        } else {
+          const newEmail = emailInput.value;
+          if (newEmail) {
+            changeEmail(newEmail).then((result) => {
+              if (result) {
+                emailDisplay.innerText = newEmail;
+                emailInput.style.display = "none";
+                editEmailBtn.innerText = "E-posta Değiştir";
+              }
+            });
+          }
+        }
+      }
+
+      async function changeEmail(newEmail) {
+        try {
+          const response = await fetch("/change_email", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token"),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: newEmail }),
+          });
+
+          const data = await response.json(); // Sunucudan gelen JSON'u al
+
+          if (!response.ok) {
+            // Hata mesajını göster
+            document.getElementById("error-message").innerText = data.error;
+            document.getElementById("error-message").style.display = "block";
+            setTimeout(
+              () =>
+                (document.getElementById("error-message").style.display =
+                  "none"),
+              5000
+            );
+            return 0;
+          } else {
+            document.getElementById("success-message").innerText =
+              "E-posta başarıyla değiştirildi!";
+            document.getElementById("success-message").style.display = "block";
+            setTimeout(
+              () =>
+                (document.getElementById("success-message").style.display =
+                  "none"),
+              5000
+            ); // 3sn sonra gizle
+
+            // Yeni token'ı kaydet
+            if (data.token) {
+              localStorage.setItem("token", data.token);
+            }
+            return 1;
+          }
+        } catch (error) {
+          // Genel hata mesajını göster
+          document.getElementById("error-message").innerText = error;
+          document.getElementById("error-message").style.display = "block";
+          setTimeout(
+            () =>
+              (document.getElementById("error-message").style.display = "none"),
+            3000
+          );
+          return 0;
+        }
+      }
+
+      fetchUserProfile();
+
+      function togglePasswordEdit() {
+        const emailInput = document.getElementById("email-input");
+        emailInput.style.display = "none";
+        let passwordInput = document.getElementById("password-input");
+        let confirmPasswordInput = document.getElementById(
+          "confirm-password-input"
+        );
+        let editPasswordBtn = document.getElementById("edit-password-btn");
+
+        // Eğer şifre giriş kutuları görünmüyorsa, göster
+        if (passwordInput.style.display === "none") {
+          passwordInput.style.display = "block";
+          confirmPasswordInput.style.display = "block";
+          editPasswordBtn.innerText = "Şifre Değiştir"; // Buton metnini değiştir
+        } else {
+          updatePassword();
+        }
+      }
+
+      async function updatePassword() {
+        const newPassword = document.getElementById("password-input").value;
+        const confirmPassword = document.getElementById(
+          "confirm-password-input"
+        ).value;
+
+        let errorMessage = document.getElementById("error-message");
+        let successMessage = document.getElementById("success-message");
+
+        if (!errorMessage) {
+          errorMessage = document.createElement("div");
+          errorMessage.id = "error-message";
+          errorMessage.style.color = "red";
+          errorMessage.style.fontWeight = "bold";
+          errorMessage.style.display = "none";
+          document.body.appendChild(errorMessage);
+        }
+
+        if (!successMessage) {
+          successMessage = document.createElement("div");
+          successMessage.id = "success-message";
+          successMessage.style.color = "green";
+          successMessage.style.fontWeight = "bold";
+          successMessage.style.display = "none";
+          document.body.appendChild(successMessage);
+        }
+
+        // Boş alan kontrolü
+        if (!newPassword || !confirmPassword) {
+          errorMessage.innerText = "Şifre alanları boş olamaz!";
+          errorMessage.style.display = "block";
+          setTimeout(() => (errorMessage.style.display = "none"), 3000);
+          return;
+        }
+
+        try {
+          const response = await fetch("/update_password", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token"),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              newPassword: newPassword,
+              confirmPassword: confirmPassword,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            errorMessage.innerText =
+              data.message || "Bilinmeyen bir hata oluştu!";
+            errorMessage.style.display = "block";
+            setTimeout(() => (errorMessage.style.display = "none"), 3000);
+            return;
+          }
+
+          // Başarı mesajı göster
+          successMessage.innerText =
+            "Şifre başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...";
+          successMessage.style.display = "block";
+          setTimeout(() => (successMessage.style.display = "none"), 3000);
+
+          setTimeout(async () => {
+            try {
+              const response = await fetch("/logout", { method: "POST" });
+              localStorage.removeItem("token");
+              window.location.href = "/login";
+            } catch (error) {
+              window.location.href = "/login";
+            }
+          }, 3000);
+        } catch (error) {
+          errorMessage.innerText = "Sunucuya bağlanırken hata oluştu!";
+          errorMessage.style.display = "block";
+          setTimeout(() => (errorMessage.style.display = "none"), 3000);
+        }
+      }
+    </script>
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+  </body>
+</html>

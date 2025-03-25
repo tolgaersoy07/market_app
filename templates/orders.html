@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Siparişlerim</title>
+    <style>
+      html,
+      body {
+        height: 100%; /* Sayfa tamamıyla yüksekliği kapsasın */
+        overflow-y: auto; /* Sayfa kaydırılabilir olacak */
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Arial", sans-serif;
+      }
+      body {
+        background: linear-gradient(135deg, #ff7300, #ffaf40);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100vh;
+        padding: 20px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #f18c1c;
+      }
+      .balance {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+      .container {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 600px;
+        overflow-y: auto;
+      }
+      .order-card {
+        background: #fba441;
+        color: rgb(0, 0, 0);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        text-align: left;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      .order-card:hover {
+        box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
+        transform: scale(1.02);
+      }
+      .order-header {
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .order-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: #d47a0f;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s ease;
+      }
+      .order-toggle:hover {
+        background: #c26e0a;
+      }
+      .products-list {
+        margin-top: 15px;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s ease;
+      }
+      .products-list.open {
+        opacity: 1;
+        max-height: 5000px;
+      }
+      .product-card {
+        background: #fce9b9;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 10px;
+        color: #333;
+        transition: background 0.3s ease;
+      }
+      .product-card:hover {
+        background: #f7d483;
+      }
+      .pagination {
+        margin-top: 15px;
+        text-align: center;
+      }
+      .pagination button {
+        padding: 8px 15px;
+        border: none;
+        background: #d47a0f;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+        transition: background 0.3s ease;
+      }
+      .pagination button:hover {
+        background: #c26e0a;
+      }
+      .pagination button:disabled {
+        background: #aaa;
+        cursor: default;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">Siparişlerim</div>
+      <div class="balance"><span id="balance">0₺</span></div>
+    </div>
+
+    <div class="container">
+      <div id="orders"></div>
+
+      <!-- Sayfalama Butonları -->
+      <div class="pagination">
+        <button id="prevPage" disabled>Önceki</button>
+        <span id="pageNumber">1</span>
+        <button id="nextPage">Sonraki</button>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/simple_user_info.js') }}"></script>
+    <script>
+      const accessToken = localStorage.getItem("token");
+
+      let currentPage = 1;
+      const perPage = 5;
+      let totalOrders = 0;
+
+      async function fetchOrders(page = 1) {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) throw new Error("Token bulunamadı.");
+
+          const response = await fetch(
+            `/orders_validate?page=${page}&per_page=${perPage}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!response.ok)
+            throw new Error("Siparişler alınırken hata oluştu.");
+
+          const data = await response.json();
+          totalOrders = data.total_orders;
+          console.log(data);
+          renderOrders(data);
+          updatePaginationControls(page);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function renderOrders(data) {
+        const orders = data.orders;
+        const ordersContainer = document.getElementById("orders");
+        ordersContainer.innerHTML = "";
+        if (!orders) {
+          ordersContainer.innerHTML = `<p style="text-align:center; 
+                                           font-size:24px; 
+                                           font-weight:bold; 
+                                           color:#fba441; 
+                                           opacity:0.7; 
+                                ">
+            Siparişiniz bulunmamaktadır.
+        </p>`;
+          return;
+        }
+
+        orders.forEach((order) => {
+          const orderCard = document.createElement("div");
+          orderCard.classList.add("order-card");
+
+          const orderHeader = document.createElement("div");
+          orderHeader.classList.add("order-header");
+
+          // Sipariş No, Toplam Tutar, Toplam Ürün, Sipariş Tarihi
+          orderHeader.innerHTML = `
+                Sipariş No: ${order["Order number"]} <br>
+                Toplam Tutar: ${order["Total amount"]}₺ <br>
+                Toplam Ürün: ${order["Total products"]} <br>
+                Sipariş Tarihi: ${new Date(
+                  order["Order date"]
+                ).toLocaleDateString("tr-TR")}
+                `;
+
+          const toggleButton = document.createElement("button");
+          toggleButton.classList.add("order-toggle");
+          toggleButton.innerText = "Detay";
+
+          const orderDetails = document.createElement("div");
+          orderDetails.classList.add("products-list");
+
+          // Ürünleri render et
+          order.Products.forEach((product, index) => {
+            const productDiv = document.createElement("div");
+            productDiv.classList.add("product-card");
+            productDiv.innerHTML = `<strong>${product["Product name"]}</strong>
+                                        <p>Adet: ${product["Product quantity"]}</p>
+                                         <p>Birim Fiyat: ${product["Product price"]}₺</p>
+                                        <p>Toplam Fiyat: ${product["Product price"]*product["Product quantity"]}</p>
+                                        <p>Barkod: ${product["Product barcode"]}</p>
+                                        <p>Bilgi: ${product["Product info"]}</p>`;
+
+            // Ürünlerin rengini sıraya göre değiştir
+            if (index % 2 === 0) {
+              productDiv.style.backgroundColor = "#c4f5ff"; // Açık renk
+            } else {
+              productDiv.style.backgroundColor = "#fbc5ef"; // Koyu renk
+            }
+
+            orderDetails.appendChild(productDiv);
+          });
+
+          // Detay butonuna tıklama olayını ekle
+          toggleButton.onclick = () => {
+            // Tüm detayları kapat
+            const allDetails = document.querySelectorAll(".products-list");
+            allDetails.forEach((detail) => {
+              if (detail !== orderDetails) {
+                detail.classList.remove("open");
+              }
+            });
+
+            // Tıklanan detay kısmını aç
+            orderDetails.classList.toggle("open");
+          };
+
+          orderCard.appendChild(orderHeader);
+          orderCard.appendChild(toggleButton);
+          orderCard.appendChild(orderDetails);
+          ordersContainer.appendChild(orderCard);
+        });
+      }
+
+      function updatePaginationControls(page) {
+        document.getElementById("pageNumber").innerText = page;
+        document.getElementById("prevPage").disabled = page <= 1;
+        document.getElementById("nextPage").disabled =
+          page * perPage >= totalOrders;
+      }
+
+      document.getElementById("prevPage").addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage--;
+          fetchOrders(currentPage);
+        }
+      });
+
+      document.getElementById("nextPage").addEventListener("click", () => {
+        if (currentPage * perPage < totalOrders) {
+          currentPage++;
+          fetchOrders(currentPage);
+        }
+      });
+
+      fetchOrders();
+    </script>
+  </body>
+</html>

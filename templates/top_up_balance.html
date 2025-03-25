@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bakiye Yükle - MarketApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/top_up_balance.css') }}">
+</head>
+<body>
+   
+<div class="header">
+    <div class="logo">Bakiye Yükle</div>
+    <div class="balance" id="balance">Bakiye: 0₺</div>
+</div>
+
+<div class="form-container">
+    <div id="message-container"></div>
+    <form id="balance-form">
+        
+
+        <div class="form-group">
+            <label for="card-name" class="form-label">Kart Sahibinin Adı Soyadı</label>
+            <input type="text" id="card-name" class="form-input" required placeholder="" />
+            <div class="error-message" id="card-name-error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="card-number" class="form-label">Kart Numarası</label>
+            <input type="text" id="card-number" class="form-input" required placeholder="" />
+            <div class="error-message" id="card-number-error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="card-cvv" class="form-label">CVV</label>
+            <input type="text" id="card-cvv" class="form-input" required placeholder="" />
+            <div class="error-message" id="card-cvv-error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="expiry-date" class="form-label">Son Kullanma Tarihi</label>
+            <div style="display: flex; gap: 10px;">
+                <select id="expiry-month" required>
+                    <option value="" disabled selected>Ay</option>
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
+                    <option value="09">09</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+                <select id="expiry-year" required>
+                    <option value="" disabled selected>Yıl</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            <div class="error-message" id="expiry-date-error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="amount" class="form-label">Yüklenecek Miktar (₺)</label>
+            <input type="number" id="amount" class="form-input" required placeholder="" />
+            <div class="error-message" id="amount-error"></div>
+        </div>
+
+        <button type="submit" class="form-button">Bakiye Yükle</button>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+<script src="{{ url_for('static', filename='js/simple_user_info.js') }}"></script>
+<script>
+    const accessToken = localStorage.getItem('token'); // Token'ı al
+
+    document.getElementById("balance-form").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        // Hata mesajlarını sıfırla
+        resetErrorMessages();
+
+        // Formdan değerleri al
+        const cardName = document.getElementById("card-name").value;
+        const cardNumber = document.getElementById("card-number").value;
+        const cardCVV = document.getElementById("card-cvv").value;
+        const expiryMonth = document.getElementById("expiry-month").value;
+        const expiryYear = document.getElementById("expiry-year").value;
+        const amount = document.getElementById("amount").value;
+
+        // Girdi doğrulaması
+        if (!cardName || !cardNumber || !cardCVV || !expiryMonth || !expiryYear || !amount) {
+            showErrorMessages(cardName, cardNumber, cardCVV, expiryMonth, expiryYear, amount);
+            return;
+        }
+
+        // API isteği gönderme
+        fetch('/top_up_balance_process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}` // Backend API token doğrulaması için header'a eklenir
+            },
+            body: JSON.stringify({
+                balance: parseFloat(amount)
+            })
+        })
+        .then(response => {
+    // Yanıtın başarılı olup olmadığını kontrol et
+    if (!response.ok) {
+        throw new Error('Sunucudan geçerli bir yanıt alınamadı');
+    }
+    return response.json();
+})
+    .then(data => {
+        const messageContainer = document.getElementById('message-container'); // Mesaj alanını al
+
+        // Eğer API başarılı bir şekilde bakiyeyi güncellediyse
+        if (data.code === 200) {
+            messageContainer.innerHTML = `<p style="color: green; font-size: 25px; margin-bottom:10px;">Bakiye yüklenmiştir.</p>`;
+            document.getElementById('balance').textContent = `Bakiye: ${data.new_balance}₺`;
+        } else {
+            messageContainer.innerHTML = `<p style="color: red; font-size: 16px;">Hata: ${data.message || 'Bilinmeyen hata'}</p>`;
+        }
+
+        // Sayfayı yenilemek yerine sadece bakiye alanını güncellemek
+        if (data.message === 'Balance updated') {
+            document.getElementById("balance").textContent = `Bakiye: ${data.new_balance}₺`; // Yeni bakiye göster
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const messageContainer = document.getElementById('message-container');
+        messageContainer.innerHTML = `<p style="color: red; font-size: 16px;">Bir hata oluştu. Lütfen tekrar deneyin.</p>`;
+    });
+});
+
+    function showErrorMessages(cardName, cardNumber, cardCVV, expiryMonth, expiryYear, amount) {
+        if (!cardName) document.getElementById("card-name-error").textContent = "Kart sahibinin adını girin.";
+        if (!cardNumber) document.getElementById("card-number-error").textContent = "Kart numaranızı girin.";
+        if (!cardCVV) document.getElementById("card-cvv-error").textContent = "CVV kodunu girin.";
+        if (!expiryMonth || !expiryYear) document.getElementById("expiry-date-error").textContent = "Son kullanma tarihini seçin.";
+        if (!amount) document.getElementById("amount-error").textContent = "Yüklenecek miktarı girin.";
+    }
+
+    function resetErrorMessages() {
+        document.getElementById("card-name-error").textContent = "";
+        document.getElementById("card-number-error").textContent = "";
+        document.getElementById("card-cvv-error").textContent = "";
+        document.getElementById("expiry-date-error").textContent = "";
+        document.getElementById("amount-error").textContent = "";
+    }
+</script>
+</body>
+</html>

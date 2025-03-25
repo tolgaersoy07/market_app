@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barkod Okuma - MarketApp</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/scan_barcode.css') }}"
+    />
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">Ürün Ekle</div>
+      <div class="balance"><span id="balance">0₺</span></div>
+    </div>
+
+    <div id="message-box">
+      <p id="message-text"></p>
+    </div>
+
+    <div class="camera-container">
+      <video id="video" autoplay></video>
+    </div>
+
+    <div class="manual-input-container">
+      <input type="text" id="manualBarcode" placeholder="Barkod girin" />
+      <button onclick="sendManualBarcode()">Barkod Ara</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/simple_user_info.js') }}"></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/@zxing/browser@latest"
+    ></script>
+
+    <script>
+      function showMessage(message, type) {
+        let msgBox = document.getElementById("message-box");
+        let msgText = document.getElementById("message-text");
+        msgText.textContent = message;
+        msgBox.style.display = "block";
+
+        if (type === "success") {
+          msgBox.style.backgroundColor = "#d4edda";
+          msgBox.style.color = "#155724";
+          msgBox.style.borderColor = "#c3e6cb";
+        } else if (type === "error") {
+          msgBox.style.backgroundColor = "#f8d7da";
+          msgBox.style.color = "#721c24";
+          msgBox.style.borderColor = "#f5c6cb";
+        }
+      }
+
+      function sendManualBarcode() {
+        const barcodeInput = document.getElementById("manualBarcode").value.trim();
+        if (barcodeInput) {
+          handleBarcode(barcodeInput);
+        } else {
+          showMessage("Lütfen bir barkod girin!", "error");
+
+        }
+      }
+
+      const video = document.getElementById("video");
+      const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+
+      async function startCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+        } catch (error) {
+          showMessage("Kamera başlatılamadı", "error");
+        }
+      }
+
+      function startBarcodeScanner() {
+        let scanningEnabled = true;
+        codeReader.decodeFromVideoDevice(undefined, "video", (result, error) => {
+          if (result && scanningEnabled) {
+            scanningEnabled = false;
+            const barcode = result.getText();
+            handleBarcode(barcode);
+            setTimeout(() => { scanningEnabled = true; }, 1000);
+          }
+        });
+      }
+
+      async function handleBarcode(barcode) {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(`/cart/add/${barcode}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          const data = await response.json();
+
+          if (response.ok) {
+            showMessage(`Ürün (${barcode}) başarıyla sepete eklendi.`, "success");
+            new Audio("{{ url_for('static', filename='beep.mp3') }}").play();
+          } else {
+            showMessage(`Hata: ${data.message || "Ürün eklenemedi"}`, "error");
+            new Audio("{{ url_for('static', filename='error.mp3') }}").play();
+          }
+        } catch (error) {
+          showMessage(`API Hatası: ${error.message}`, "error");
+        }
+      }
+
+      startCamera().then(() => startBarcodeScanner());
+    </script>
+  </body>
+</html>

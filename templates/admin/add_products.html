@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barkod Okuma - MarketApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background-color: #f18c1c;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            width: 100%;
+            background-color: #ff9a00;
+            padding: 20px;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .logo {
+            font-size: 30px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+        .camera-container {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background-color: black;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            color: black;
+            padding: 30px;
+            border-radius: 15px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .modal button {
+            background-color: #ff9a00;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .modal .close {
+            background-color: red;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group input {
+            padding: 10px;
+            width: 100%;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .barcode-display {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .manual-input-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .manual-input-container input {
+            padding: 10px;
+            width: 300px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        .manual-input-container button {
+            padding: 10px;
+            background-color: #ff9a00;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">MarketApp</div>
+    </div>
+
+    <div class="camera-container">
+        <video id="video" autoplay></video>
+    </div>
+
+    <!-- Modal for product info -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <h3 id="productMessage">Ürün sistemde kayıtlı</h3>
+            <button class="close" onclick="closeModal()">Kapat</button>
+        </div>
+    </div>
+
+    <!-- Modal for adding new product -->
+    <div id="productAddModal" class="modal">
+        <div class="modal-content">
+            <h3>Yeni Ürün Kaydet</h3>
+            <div class="form-group">
+                <label for="productName">Ürün Adı</label>
+                <input type="text" id="productName" placeholder="Ürün Adı" required />
+            </div>
+            <div class="form-group">
+                <label for="productInfo">Ürün İçeriği</label>
+                <input type="text" id="productInfo" placeholder="Ürün İçeriği" required />
+            </div>
+            <div class="form-group">
+                <label for="productPrice">Fiyat</label>
+                <input type="number" id="productPrice" placeholder="Ürün Fiyatı" step="0.01" required />
+            </div>
+            <div class="form-group">
+                <label for="productStock">Stok Adedi</label>
+                <input type="number" id="productStock" placeholder="Ürün Stok Adedi" required min="0" />
+            </div>
+            <div class="barcode-display">
+                <strong>Barkod:</strong> <span id="productBarcode"></span>
+            </div>
+            <button onclick="addProduct()">Kaydet</button>
+            <button class="close" onclick="closeAddModal()">Kapat</button>
+        </div>
+    </div>
+
+    <!-- Manual input for barcode -->
+    <div class="manual-input-container">
+        <input type="text" id="manualBarcode" placeholder="Barkod girin" />
+        <button onclick="manualBarcodeInput()">Barkod Ara</button>
+    </div>
+
+    <script type="text/javascript" src="https://unpkg.com/@zxing/browser@latest"></script>
+
+    <script>
+        const video = document.getElementById("video");
+        const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+        let barcode = null;
+        let currentStream = null; // Kamera akışını saklamak için
+
+        async function startCamera() {
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+                video.srcObject = currentStream;
+            } catch (error) {
+                console.error("Kamera başlatılamadı:", error);
+            }
+        }
+
+        function startBarcodeScanner() {
+            codeReader.decodeFromVideoDevice(undefined, "video", (result, error) => {
+                if (result) {
+                    barcode = result.getText();
+                    if (/^\d{13}$/.test(barcode)) {
+                        fetchProductInfo(barcode);
+                    } else {
+                        console.warn("Geçersiz barkod:", barcode);
+                    }
+                }
+                if (error) {
+                    console.error("Barkod okunamadı:", error);
+                }
+            });
+        }
+
+        async function fetchProductInfo(barcode) {
+            try {
+                const response = await fetch(`/get_product_info/${barcode}`);
+                const data = await response.json();
+                if (response.ok && data.exists) {
+                    displayProductMessage("Ürün sistemde kayıtlı!");
+                } else {
+                    displayProductAddForm();
+                    document.getElementById("productBarcode").textContent = barcode;
+                }
+            } catch (error) {
+                console.error("API isteği hatası:", error);
+            }
+        }
+
+        function displayProductMessage(message) {
+            document.getElementById("productMessage").innerText = message;
+            document.getElementById("productModal").style.display = "flex";
+            stopCamera();
+        }
+
+        function displayProductAddForm() {
+            document.getElementById("productAddModal").style.display = "flex";
+            stopCamera();
+        }
+
+        function closeModal() {
+            document.getElementById("productModal").style.display = "none";
+            startCamera();
+        }
+
+        function closeAddModal() {
+            document.getElementById("productAddModal").style.display = "none";
+            startCamera();
+        }
+
+        async function addProduct() {
+            const name = document.getElementById("productName").value;
+            const info = document.getElementById("productInfo").value;
+            const price = document.getElementById("productPrice").value;
+            const stock = document.getElementById("productStock").value;
+            const barcode = document.getElementById("productBarcode").textContent;
+
+            const newProduct = { name, info, price, stock, barcode };
+
+            try {
+                const response = await fetch('/add_product', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newProduct)
+                });
+                if (response.ok) {
+                    displayProductMessage("Ürün başarıyla kaydedildi!");
+                } else {
+                    console.error("Ürün kaydedilemedi.");
+                }
+            } catch (error) {
+                console.error("API isteği hatası:", error);
+            }
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+        }
+
+        function manualBarcodeInput() {
+            const manualBarcode = document.getElementById("manualBarcode").value;
+            if (manualBarcode && /^\d{13}$/.test(manualBarcode)) {
+                fetchProductInfo(manualBarcode);
+            } else {
+                console.warn("Geçersiz barkod.");
+            }
+        }
+
+        window.onload = () => {
+            startCamera();
+            startBarcodeScanner();
+        };
+    </script>
+
+</body>
+</html>

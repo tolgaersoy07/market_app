@@ -1,0 +1,188 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+body {
+    background-color: #f18c1c;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 15px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #f18c1c;
+}
+.balance {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+.camera-container {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    background-color: black;
+    border-radius: 15px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+video {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+}
+.manual-input-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.manual-input-container input {
+    padding: 10px;
+    width: 300px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+}
+.manual-input-container button {
+    padding: 10px;
+    background-color: #ff9a00;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#cart-items {
+ 
+    list-style: none;
+}
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #060202;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    font-size: 16px;
+    font-weight: bold;
+}
+.cart-item span {
+    color: #ff9a00;
+    font-weight: bold;
+}
+#message-box {
+    display: none; /* Başlangıçta gizli */
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    position: relative;
+}
+
+
+.cart-container {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    color: rgb(0, 0, 0);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Sepete eklenen ürünün arka planı Aqua-Pembe dönüşümlü olacak */
+.cart-item:nth-child(odd) {
+    background-color: #072e36;
+}
+
+.cart-item:nth-child(even) {
+    background-color:#fbc5ef;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: black; /* Yazılar siyah olacak */
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Butonların Genel Stili */
+.cart-container button {
+    font-size: 18px; /* Yazı boyutunu büyüt */
+    padding: 10px 12px; /* Buton iç boşluğu */
+    border: none; /* Kenarlık yok */
+    border-radius: 8px; /* Hafif yuvarlak köşeler */
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    width: 40px; /* Sabit genişlik */
+    height: 40px; /* Sabit yükseklik */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Artı Butonu (Yeşil) */
+.cart-container button.plus {
+    background-color: #28a745; /* Yeşil */
+    color: white;
+}
+
+.cart-container button.plus:hover {
+    background-color: #218838; /* Koyu yeşil */
+    transform: scale(1.1);
+}
+
+/* Eksi Butonu (Sarı) */
+.cart-container button.minus {
+    background-color: #ffc107; /* Sarı */
+    color: black;
+}
+
+.cart-container button.minus:hover {
+    background-color: #e0a800; /* Koyu sarı */
+    transform: scale(1.1);
+}
+
+/* Silme Butonu (Kırmızı) */
+.cart-container button.delete {
+    background-color: #dc3545; /* Kırmızı */
+    color: white;
+}
+
+.cart-container button.delete:hover {
+    background-color: #c82333; /* Koyu kırmızı */
+    transform: scale(1.1);
+}

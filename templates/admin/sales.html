@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satışlar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #ff7300, #ffaf40);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f18c1c;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            overflow-y: auto;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+        .filter-input {
+            padding: 8px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .order-card {
+            background: #fba441;
+            color: rgb(0, 0, 0);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: left;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .order-card:hover {
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
+            transform: scale(1.02);
+        }
+        .order-header {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .order-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #d47a0f;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+        .order-toggle:hover {
+            background: #c26e0a;
+        }
+        .products-list {
+            margin-top: 15px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        .products-list.open {
+            opacity: 1;
+            max-height: 500px;
+        }
+        .product-card {
+            background: #fce9b9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: #333;
+            transition: background 0.3s ease;
+        }
+        .product-card:hover {
+            background: #f7d483;
+        }
+        .pagination {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .pagination button {
+            padding: 8px 15px;
+            border: none;
+            background: #d47a0f;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        .pagination button:hover {
+            background: #c26e0a;
+        }
+        .pagination button:disabled {
+            background: #aaa;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">Satışlar</div>
+</div>
+
+<div class="container">
+    <div class="filters">
+        <input type="date" id="startDate" class="filter-input" placeholder="Başlangıç Tarihi">
+        <input type="date" id="endDate" class="filter-input" placeholder="Bitiş Tarihi">
+        <input type="text" id="barcode" class="filter-input" placeholder="Ürün Barkodu">
+        <button id="filterButton">Filtrele</button>
+    </div>
+
+    <div id="orders"></div>
+
+    <!-- Sayfalama Butonları -->
+    <div class="pagination">
+        <button id="prevPage" disabled>Önceki</button>
+        <span id="pageNumber">1</span>
+        <button id="nextPage">Sonraki</button>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const perPage = 5;
+    let totalOrders = 0;
+
+    async function fetchOrders(page = 1) {
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        const barcode = document.getElementById("barcode").value;
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Token bulunamadı.");
+
+            let url = `sales_validate?page=${page}&per_page=${perPage}`;
+    
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            if (barcode) url += `&barcode=${barcode}`;
+            console.log(startDate, endDate, barcode);
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error("Satışlar alınırken hata oluştu.");
+
+            const data = await response.json();
+            console.log(data);
+            totalOrders = data.total_orders;
+            renderOrders(data.orders);
+            updatePaginationControls(page);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function renderOrders(orders) {
+        const ordersContainer = document.getElementById("orders");
+        ordersContainer.innerHTML = "";
+
+        orders.forEach(order => {
+            const orderCard = document.createElement("div");
+            orderCard.classList.add("order-card");
+
+            const orderHeader = document.createElement("div");
+            orderHeader.classList.add("order-header");
+            orderHeader.innerHTML = `Satış #${order["Order number"]} - ${order["Order date"]} - Toplam: ${order["Total amount"]}₺`;
+
+            const toggleButton = document.createElement("button");
+            toggleButton.classList.add("order-toggle");
+            toggleButton.textContent = "Ürünleri Göster";
+            toggleButton.onclick = () => toggleProducts(order["Order number"]);
+
+            const productList = document.createElement("div");
+            productList.classList.add("products-list");
+
+            order.Products.forEach(product => {
+                const productCard = document.createElement("div");
+                productCard.classList.add("product-card");
+                productCard.innerHTML = `${product["Product name"]} - ${product["Product price"]}₺ x ${product["Product quantity"]}`;
+                productList.appendChild(productCard);
+            });
+
+            orderCard.appendChild(orderHeader);
+            orderCard.appendChild(toggleButton);
+            orderCard.appendChild(productList);
+
+            ordersContainer.appendChild(orderCard);
+        });
+    }
+
+    function toggleProducts(orderId) {
+        const orderCards = document.querySelectorAll(".order-card");
+        orderCards.forEach(card => {
+            const productList = card.querySelector(".products-list");
+            if (productList) {
+                if (card.querySelector(".order-toggle").textContent === "Ürünleri Göster") {
+                    card.querySelector(".order-toggle").textContent = "Ürünleri Gizle";
+                    productList.classList.add("open");
+                } else {
+                    card.querySelector(".order-toggle").textContent = "Ürünleri Göster";
+                    productList.classList.remove("open");
+                }
+            }
+        });
+    }
+
+    function updatePaginationControls(page) {
+        document.getElementById("prevPage").disabled = page === 1;
+        document.getElementById("nextPage").disabled = page * perPage >= totalOrders;
+        document.getElementById("pageNumber").textContent = page;
+    }
+
+    document.getElementById("filterButton").addEventListener("click", () => {
+        fetchOrders(1);
+    });
+
+    document.getElementById("prevPage").addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchOrders(currentPage);
+        }
+    });
+
+    document.getElementById("nextPage").addEventListener("click", () => {
+        if (currentPage * perPage < totalOrders) {
+            currentPage++;
+            fetchOrders(currentPage);
+        }
+    });
+
+    // Başlangıçta satışları çek
+    fetchOrders(currentPage);
+</script>
+
+</body>
+</html>

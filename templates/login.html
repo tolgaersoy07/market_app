@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketApp - Giriş Yap</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="brand">MarketApp</div>
+    <div class="container">
+        <h2>Giriş Yap</h2>
+        <p class="error-message" id="errorMessage"></p>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="email">E-Posta</label>
+                <input type="email" id="email" placeholder="E-Posta adresinizi girin">
+            </div>
+            <div class="input-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" placeholder="Şifrenizi girin">
+            </div>
+            <button type="submit" class="btn">Giriş Yap</button>
+        </form>
+        <div class="links">
+            <a href="#" id="forgotPasswordLink">Şifremi Unuttum</a> | <a href="#" id="registerLink">Kayıt Ol</a>
+        </div>
+    </div>
+    <div class="info-container">
+        <h3>MarketApp Nasıl Kullanılır?</h3>
+        <ul>
+            <li>• Uygulamaya kayıt olun.</li>
+            <li>• Hesabınıza bakiye yükleyin.</li>
+            <li>• Market raflarından almak istediğiniz ürünleri seçin.</li>
+            <li>• Ürünlerin barkodlarını uygulama ile okutun.</li>
+            <li>• Ödeme işlemini uygulama üzerinden gerçekleştirin.</li>
+            <li>• Kasaya uğramadan hızlıca çıkış yapın!</li>
+        </ul>
+    </div>
+
+    
+
+
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let email = document.getElementById('email').value.trim();
+            let password = document.getElementById('password').value.trim();
+            let errorMessage = document.getElementById('errorMessage');
+
+            if (email === "" || password === "") {
+                errorMessage.innerText = "Lütfen E-Postanızı ve Şifrenizi eksiksiz doldurunuz!";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            fetch('/login_validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    credentials: "include", 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                credentials: 'include', 
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.valid)
+                {
+                    localStorage.setItem('token', data.token);
+                    if(data.user_type==="user")
+                    {
+                        window.location.href = "/dashboard?token="+data.token;
+                    }
+                    if(data.user_type==="admin")
+                    {
+                        window.location.href = "/admin/dashboard?token="+data.token;
+                    }
+                }
+                else {
+                    errorMessage.innerText = data.message || "Bilinmeyen bir hata oluştu!";
+                    errorMessage.style.display = "block";
+                }
+            })
+            .catch(error => {
+                errorMessage.innerText = "Hata oluştu: "+error;
+                errorMessage.style.display = "block";
+            });
+        });
+
+        // Şifremi Unuttum linkine tıklama işlemi
+        document.getElementById('forgotPasswordLink').addEventListener('click', function(event) {
+            event.preventDefault();
+            window.location.href = '/forgotten_password'; // Şifremi unuttum API'sine yönlendir
+        });
+
+        // Kayıt Ol linkine tıklama işlemi
+        document.getElementById('registerLink').addEventListener('click', function(event) {
+            event.preventDefault();
+            window.location.href = '/register'; // Kayıt ol API'sine yönlendir
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketApp - Kayıt Ol</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+</head>
+<body>
+    <div class="brand">MarketApp</div>
+    <div class="container">
+        
+        <h2>Kayıt Ol</h2>
+        <p class="error-message" id="errorMessage"></p>
+        <form id="registerForm">
+            <div class="input-group">
+                <label for="first_name">İsim</label>
+                <input type="text" id="first_name" placeholder="İsminizi girin">
+            </div>
+            <div class="input-group">
+                <label for="last_name">Soyisim</label>
+                <input type="text" id="last_name" placeholder="Soyisminizi girin">
+            </div>
+            <div class="input-group">
+                <label for="email">E-Posta</label>
+                <input type="email" id="email" placeholder="E-Posta adresinizi girin">
+            </div>
+            <div class="input-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" placeholder="Şifrenizi girin">
+            </div>
+            <div class="input-group">
+                <label for="phone">Telefon Numarası</label>
+                <input type="text" id="phone" placeholder="Telefon numaranızı girin">
+            </div>
+            <button type="submit" class="btn">Kayıt Ol</button>
+        </form>
+        <div class="links">
+            <a href="/">Giriş Yap</a>
+        </div>
+    </div>
+    <div class="info-container">
+        <h3>MarketApp Nasıl Kullanılır?</h3>
+        <ul>
+            <li>• Uygulamaya kayıt olun.</li>
+            <li>• Hesabınıza bakiye yükleyin.</li>
+            <li>• Market raflarından almak istediğiniz ürünleri seçin.</li>
+            <li>• Ürünlerin barkodlarını uygulama ile okutun.</li>
+            <li>• Ödeme işlemini uygulama üzerinden gerçekleştirin.</li>
+            <li>• Kasaya uğramadan hızlıca çıkış yapın!</li>
+        </ul>
+    </div>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let first_name = document.getElementById('first_name').value.trim();
+            let last_name = document.getElementById('last_name').value.trim();
+            let email = document.getElementById('email').value.trim();
+            let password = document.getElementById('password').value.trim();
+            let phone = document.getElementById('phone').value.trim();
+            let errorMessage = document.getElementById('errorMessage');
+
+            if (first_name === "" || last_name === "" || email === "" || password === "" || phone === "") {
+                errorMessage.innerText = "Lütfen tüm alanları doldurun!";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            fetch('/register_validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ first_name, last_name, email, password, phone })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code==200) {
+                    errorMessage.innerText = data.message;
+                    errorMessage.style.color = "green";
+                    errorMessage.style.display = "block";
+                    setTimeout(() => window.location.href = '/login', 2000); 
+                } else {
+                    errorMessage.innerText = data.message;
+                    errorMessage.style.display = "block";
+                }
+            })
+            .catch(error => {
+                errorMessage.innerText=error;
+                errorMessage.style.display = "block";
+            });
+        });
+    </script>
+</body>
+</html>

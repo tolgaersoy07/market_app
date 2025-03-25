@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ürün Listesi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #ff7300, #ffaf40);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f18c1c;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+        }
+        .product-card {
+            background: #fba441;
+            color: rgb(0, 0, 0);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
+            transform: scale(1.02);
+        }
+        .product-header {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .product-details {
+            margin-top: 10px;
+            color: #333;
+        }
+        .pagination {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .pagination button {
+            padding: 8px 15px;
+            border: none;
+            background: #d47a0f;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        .pagination button:hover {
+            background: #c26e0a;
+        }
+        .pagination button:disabled {
+            background: #aaa;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">Ürün Listesi</div>
+</div>
+
+<div class="container">
+    <div id="products"></div>
+
+    <!-- Sayfalama Butonları -->
+    <div class="pagination">
+        <button id="prevPage" disabled>Önceki</button>
+        <span id="pageNumber">1</span>
+        <button id="nextPage">Sonraki</button>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const perPage = 10;  // Her sayfada 10 ürün gösterilecek
+    let totalProducts = 0;
+
+    async function fetchProducts(page = 1) {
+        try {
+            const response = await fetch(`/api/products?page=${page}&per_page=${perPage}`);
+            
+            if (!response.ok) throw new Error("Ürünler alınırken hata oluştu.");
+
+            const data = await response.json();
+            totalProducts = data.total_products;
+            renderProducts(data.products);
+            updatePaginationControls(page);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function renderProducts(products) {
+        const productsContainer = document.getElementById("products");
+        productsContainer.innerHTML = "";
+
+        products.forEach(product => {
+            const productCard = document.createElement("div");
+            productCard.classList.add("product-card");
+
+            const productHeader = document.createElement("div");
+            productHeader.classList.add("product-header");
+            productHeader.innerHTML = `${product.name}`;
+
+            const productDetails = document.createElement("div");
+            productDetails.classList.add("product-details");
+            productDetails.innerHTML = `
+                <p><strong>Fiyat:</strong> ${product.price}₺</p>
+                <p><strong>Barkod:</strong> ${product.barcode}</p>
+                <p><strong>Bilgi:</strong> ${product.info}</p>
+            `;
+
+            productCard.appendChild(productHeader);
+            productCard.appendChild(productDetails);
+            productsContainer.appendChild(productCard);
+        });
+    }
+
+    function updatePaginationControls(page) {
+        document.getElementById("pageNumber").innerText = page;
+        document.getElementById("prevPage").disabled = (page <= 1);
+        document.getElementById("nextPage").disabled = (page * perPage >= totalProducts);
+    }
+
+    document.getElementById("prevPage").addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchProducts(currentPage);
+        }
+    });
+
+    document.getElementById("nextPage").addEventListener("click", () => {
+        if (currentPage * perPage < totalProducts) {
+            currentPage++;
+            fetchProducts(currentPage);
+        }
+    });
+
+    fetchProducts();
+</script>
+
+</body>
+</html>

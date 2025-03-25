@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarketApp - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+  </head>
+  <body>
+    <div class="header">
+      <div class="user-info" id="userInfo">Yükleniyor...</div>
+      <div class="balance" id="balance">Bakiye: Yükleniyor...</div>
+    </div>
+    <div class="container">
+      <button class="btn" id="ordersBtn">
+        Geçmiş Siparişlerim<span
+          >Önceki siparişlerinizi görüntüleyin ve tekrar sipariş verin.</span
+        >
+      </button>
+      <button class="btn" id="profileBtn">
+        Profil Bilgilerim<span
+          >Hesap bilgilerinizi yönetin, adres ve ödeme bilgilerinizi
+          güncelleyin.</span
+        >
+      </button>
+      <button class="btn" id="scanBarcodeBtn">
+        Barkod Okut<span
+          >Ürünleri hızlıca sepete eklemek için barkod okutun.</span
+        >
+      </button>
+      <button class="btn" id="cartBtn">
+        Sepet<span
+          >Sepetinize eklediğiniz ürünleri inceleyin ve ödeme yapın.</span
+        >
+      </button>
+      <button class="btn" id="topUpBalanceBtn">
+        Bakiye Yükle<span>Buradan bakiye yükleyebilirsiniz.</span>
+      </button>
+      <button id="logoutBtn" class="btn">Çıkış Yap</button>
+    </div>
+    <script>
+      fetch("/set_cookie", {
+        method: "GET",
+        credentials: "include",
+      });
+    </script>
+    <script>
+      const accessToken = localStorage.getItem("token"); // Token'ı localStorage veya uygun bir yerden al
+
+      document
+        .getElementById("ordersBtn")
+        .addEventListener("click", function () {
+          window.location.href =
+            "/orders?token=" + localStorage.getItem("token");
+          fetch("/orders_validate")
+            .then((response) => {
+              if (response.ok) {
+                window.location.href =
+                  "/orders?token=" + localStorage.getItem("token");
+              } 
+            })
+        });
+
+      document
+        .getElementById("profileBtn")
+        .addEventListener("click", function () {
+          fetch("/profile_validate")
+            .then((response) => {
+              if (response.ok) {
+                window.location.href =
+                  "/profile?token=" + localStorage.getItem("token");
+              }
+            })
+        });
+
+      document
+        .getElementById("scanBarcodeBtn")
+        .addEventListener("click", function () {
+          fetch("/scan_barcode_validate")
+            .then((response) => {
+              if (response.ok) {
+                window.location.href =
+                  "/scan_barcode?token=" + localStorage.getItem("token");
+              }
+            })
+        });
+
+      document.getElementById("cartBtn").addEventListener("click", function () {
+        fetch("/cart_validate")
+          .then((response) => {
+            if (response.ok) {
+              window.location.href =
+                "/cart?token=" + localStorage.getItem("token");
+            }
+          })
+      });
+
+      document
+        .getElementById("topUpBalanceBtn")
+        .addEventListener("click", function () {
+          fetch("/top_up_balance_validate")
+            .then((response) => {
+              if (response.ok) {
+                window.location.href =
+                  "/top_up_balance?token=" + localStorage.getItem("token");
+              } 
+            })
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/market_app_logo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/simple_user_info.js') }}"></script>
+  </body>
+</html>

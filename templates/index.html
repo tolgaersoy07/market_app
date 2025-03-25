@@ -1,0 +1,47 @@
+<script>
+
+        fetch('/set_cookie', {
+            method: 'GET',  
+            credentials: 'include'  
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Cookie set edildi.");
+        })
+        .catch(error => {
+            console.error("Hata oluştu: ", error);
+        });
+    
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetch('/access_token_validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    localStorage.setItem('token', data.token);
+                    if(data.user_type=="admin") {
+                        window.location.href = "/admin/dashboard?token=" +data.token;
+                    } else {
+                        window.location.href = "/dashboard?token=" +data.token;
+                    }
+                } else {
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => {
+                window.location.href = '/login';
+            });
+        } else {
+            window.location.href = '/login';
+        }
+    });
+</script>
